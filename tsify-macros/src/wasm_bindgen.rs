@@ -37,6 +37,7 @@ pub fn expand(cont: &Container, decl: Decl) -> TokenStream {
             extern crate serde as _serde;
         },
     });
+    let into_js_value = attrs.into_wasm_abi.then(|| expand_into_js_value(cont));
     let into_wasm_abi = attrs.into_wasm_abi.then(|| expand_into_wasm_abi(cont));
     let from_wasm_abi = attrs.from_wasm_abi.then(|| expand_from_wasm_abi(cont));
 
@@ -67,9 +68,34 @@ pub fn expand(cont: &Container, decl: Decl) -> TokenStream {
 
             #typescript_custom_section
             #wasm_describe
+            #into_js_value
             #into_wasm_abi
             #from_wasm_abi
         };
+    }
+}
+
+fn expand_into_js_value(cont: &Container) -> TokenStream {
+    let ident = cont.ident();
+    let serde_path = cont.serde_container.attrs.serde_path();
+
+    let mut generics = cont.generics().clone();
+    generics
+        .make_where_clause()
+        .predicates
+        .push(parse_quote!(Self: #serde_path::Serialize));
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+
+    quote! {
+        impl #impl_generics Into<JsValue> for #ident #ty_generics #where_clause {
+
+            #[inline]
+            fn into(self) -> JsValue {
+                serde_wasm_bindgen::to_value(&self).unwrap()
+            }
+        }
     }
 }
 
