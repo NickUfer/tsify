@@ -4,6 +4,7 @@ use serde_derive_internals::ast::Field;
 pub struct TsifyContainerAttars {
     pub into_wasm_abi: bool,
     pub from_wasm_abi: bool,
+    pub into_js_value: bool,
     pub namespace: bool,
 }
 
@@ -12,6 +13,7 @@ impl TsifyContainerAttars {
         let mut attrs = Self {
             into_wasm_abi: false,
             from_wasm_abi: false,
+            into_js_value: false,
             namespace: false,
         };
 
@@ -34,6 +36,14 @@ impl TsifyContainerAttars {
                         return Err(meta.error("duplicate attribute"));
                     }
                     attrs.from_wasm_abi = true;
+                    return Ok(());
+                }
+
+                if meta.path.is_ident("into_js_value") {
+                    if attrs.into_js_value {
+                        return Err(meta.error("duplicate attribute"));
+                    }
+                    attrs.into_js_value = true;
                     return Ok(());
                 }
 
